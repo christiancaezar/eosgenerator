@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paste Link and Extract</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            min-height: 50px;
+        }
+        a {
+            color: blue;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Paste Subscription Info Here</h2>
+
+    <table>
+        <tr>
+            <td id="textCell" contenteditable="true">
+                <!-- Paste your Excel content here -->
+            </td>
+        </tr>
+    </table>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const cell = document.getElementById("textCell");
+
+            // Allow pasting into the cell (the contenteditable attribute)
+            cell.addEventListener("paste", function (e) {
+                // Prevent the default paste action
+                e.preventDefault();
+
+                // Get the text or HTML being pasted
+                const paste = (e.clipboardData || window.clipboardData).getData('text/html');
+
+                // Paste the HTML (which includes the link) into the table cell
+                cell.innerHTML = paste;
+            });
+
+            // Handle clicking on a link within the cell
+            cell.addEventListener("click", function (event) {
+                const clickedElement = event.target;
+
+                // Check if the clicked element is a link (anchor tag)
+                if (clickedElement.tagName === "A") {
+                    const link = clickedElement.href;  // Extract the href attribute (the URL)
+                    alert("The link for yosnel is: " + link);  // Show the link in an alert
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>

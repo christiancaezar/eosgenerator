@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CABO EOS Report Generator</title>
+  
+  <!-- Bootstrap 5 CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .table-borderless tbody tr, 
+    .table-borderless th, 
+    .table-borderless td {
+      border: none !important;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container mt-5" id="main-content">
+  <h2 class="text-center mb-2 text-white">CABO EOS Report Generator</h2>
+  <h6 class="text-center mb-3 text-white">by Christian Caezar</h6>
+  
+  <div class="container mb-2 p-0 d-flex justify-content-between">
+    <h5 id="modelName1" class="text-white mb-0 d-flex align-items-center">Model Name</h5>
+    <div>
+        <button type="button" class="btn btn-outline-light me-2" onclick="confirmReload()">Reset All</button>
+        <button type="button" class="btn btn-light" onclick="checkUndefinedArray()">Generate Report</button>
+    </div>
+  </div>
+
+  <!-- First Table -->
+  <table class="table table-bordered mb-5" id="spreadsheet1">
+    <thead>
+      <tr class="text-center">
+        <th>Date & Time</th>
+        <th>Amount</th>
+        <th>Fee</th>
+        <th>Net</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Second Table -->
+  <div id="dualModelSection" class="d-none">
+    <div class="container mb-2 p-0 d-flex justify-content-between">
+      <h5 id="modelName2" class="text-white mb-1 d-flex align-items-center"></h5>
+    </div>
+    <table class="table table-bordered" id="spreadsheet2">
+      <thead>
+        <tr class="text-center">
+          <th>Date & Time</th>
+          <th>Amount</th>
+          <th>Fee</th>
+          <th>Net</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td contenteditable="true"></td>
+          <td contenteditable="true"></td>
+          <td contenteditable="true"></td>
+          <td contenteditable="true"></td>
+          <td contenteditable="true"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div id="myModal" class="modal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Model Selection</h5>
+      </div>
+      <div class="modal-body">
+        <select id="firstModelSelect" class="form-select mb-3" aria-label="Default select example">
+          <option selected disabled>Select model</option>
+          <option value="Antonia Mckenzie">Antonia</option>
+          <option value="Ana Miguera">Ana</option>
+          <option value="Gaby Caivo">Gaby</option>
+          <option value="Zoey Riveras">Zoey</option>
+          <option value="Carol Marthy">Carol</option>
+        </select>
+        <select id="secondModelSelect" class="form-select mb-3 d-none" aria-label="Default select example">
+          <option selected disabled>Select model</option>
+          <option value="Antonia Mckenzie">Antonia</option>
+          <option value="Ana Miguera">Ana</option>
+          <option value="Gaby Caivo">Gaby</option>
+          <option value="Zoey Riveras">Zoey</option>
+          <option value="Carol Marthy">Carol</option>
+        </select>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="dualModelCheckbox">
+          <label class="form-check-label text-black" for="dualModelCheckbox">
+            Dual Model
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-dark" id="proceedButton">Proceed</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EOS REPORT DISPLAY -->
+<div class="modal modal-lg fade" id="reportModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable .modal-fullscreen-md-down">
+    <div class="modal-content">
+      <div class="modal-header" style="padding: 10px;">
+        <h1 class="modal-title fs-4 fw-bold ms-2" id="staticBackdropLabel">EOS Report</h1>
+        <div class="d-flex align-items-center" style="gap: 5px;">
+          <input type="date" class="form-control form-control-sm" id="date" aria-describedby="date" style="max-width: 150px;">
+          <button type="button" class="btn btn-outline-dark btn-sm" onclick="setDateToday()">Today</button>
+          <select class="form-select form-select-sm ms-2" id="selectShift" aria-label="time-select" style="width: 150px;">
+            <option selected disabled>Select shift</option>
+            <option value="12PM - 8PM PST">12PM - 8PM PST</option>
+            <option value="8PM - 4AM PST">8PM - 4AM PST</option>
+            <option value="4AM - 12PM PST">4AM - 12PM PST</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="container mt-2">
+          <div class="d-flex align-items-center justify-content-between mb-4">
+            <p id="eosModel1" class="fs-5 mb-0 fw-bold d-flex align-items-center"></p>
+            <div class="d-flex">
+                <button type="button" id="firstCopy" class="btn btn-dark btn-sm">Copy</button>
+                <button type="button" id="viewsheet1" class="btn btn-outline-dark ms-2" data-bs-target="#salesheet1" data-bs-toggle="modal">View sales sheet</button>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-sm-6 mb-3 mb-sm-0">
+              <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title">Gross Sales</h5>
+                  <p class="card-text text-center fs-4 fw-bold" id="gross1"></p>
+                </div>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title">Net Sales</h5>
+                  <p class="card-text text-center fs-4 fw-bold" id="net1"></p>
+                </div>
+              </div>
+            </div>
+            <div class="col mt-4">
+              <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title">Analytics</h5>
+                  <div class="container card-text mt-3">
+                    <div class="row text-start">
+                      <div class="col-auto">
+                        <p class="mb-2">New Subscriptions:</p>
+                      </div>
+                      <div class="col-auto">
+                        <span class="fw-bold" id="new1"></span>
+                      </div>
+                    </div>
+                    <div class="row text-start">
+                      <div class="col-auto">
+                        <p class="mb-2">Recurring Subscriptions:</p>
+                      </div>
+                      <div class="col-auto">
+                        <span class="fw-bold" id="rec1"></span>
+                      </div>
+                    </div>
+                    <div class="row text-start">
+                      <div class="col-auto">
+                        <p class="mb-2">Messages:</p>
+                      </div>
+                      <div class="col-auto">
+                        <span class="fw-bold" id="messages1"></span>
+                      </div>
+                    </div>
+                    <div class="row text-start">
+                      <div class="col-auto">
+                        <p class="mb-2">Tips:</p>
+                      </div>
+                      <div class="col-auto">
+                        <span class="fw-bold" id="tips1"></span>
+                      </div>
+                    </div>
+                    <div class="row text-start">
+                      <div class="col-auto">
+                        <p class="mb-2">Subscriptions:</p>
+                      </div>
+                      <div class="col-auto">
+                        <span class="fw-bold" id="subs1"></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col mt-4">
+              <div class="card h-100">
+                <div class="card-body">
+                  <h5 class="card-title">Top Spenders</h5>
+                  <div class="container card-text mt-3">
+                    <p id="top-spenders1"></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="d-none" id="dualModelReport">
+          <hr class="mt-5 mb-4">
+          <div class="container mt-2">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+              <p id="eosModel2" class="fs-5 mb-0 fw-bold d-flex align-items-center"></p>
+              <div class="d-flex">
+                <button type="button" id="secondCopy" class="btn btn-dark btn-sm">Copy</button>
+                <button type="button" id="viewsheet2" class="btn btn-outline-dark ms-2" data-bs-target="#salesheet1" data-bs-toggle="modal">View sales sheet</button>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-sm-6 mb-3 mb-sm-0">
+                <div class="card">
+                  <div class="card-body">
+                    <h5 class="card-title">Gross Sales</h5>
+                    <p class="card-text text-center fs-4 fw-bold" id="gross2"></p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <div class="card">
+                  <div class="card-body">
+                    <h5 class="card-title">Net Sales</h5>
+                    <p class="card-text text-center fs-4 fw-bold" id="net2"></p>
+                  </div>
+                </div>
+              </div>
+              <div class="col mt-4">
+                <div class="card">
+                  <div class="card-body">
+                    <h5 class="card-title">Analytics</h5>
+                    <div class="container card-text mt-3">
+                      <div class="row text-start">
+                        <div class="col-auto">
+                          <p class="mb-2">New Subscriptions:</p>
+                        </div>
+                        <div class="col-auto">
+                          <span class="fw-bold" id="new2"></span>
+                        </div>
+                      </div>
+                      <div class="row text-start">
+                        <div class="col-auto">
+                          <p class="mb-2">Recurring Subscriptions:</p>
+                        </div>
+                        <div class="col-auto">
+                          <span class="fw-bold" id="rec2"></span>
+                        </div>
+                      </div>
+                      <div class="row text-start">
+                        <div class="col-auto">
+                          <p class="mb-2">Messages:</p>
+                        </div>
+                        <div class="col-auto">
+                          <span class="fw-bold" id="messages2"></span>
+                        </div>
+                      </div>
+                      <div class="row text-start">
+                        <div class="col-auto">
+                          <p class="mb-2">Tips:</p>
+                        </div>
+                        <div class="col-auto">
+                          <span class="fw-bold" id="tips2"></span>
+                        </div>
+                      </div>
+                      <div class="row text-start">
+                        <div class="col-auto">
+                          <p class="mb-2">Subscriptions:</p>
+                        </div>
+                        <div class="col-auto">
+                          <span class="fw-bold" id="subs2"></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col mt-4">
+                <div class="card h-100">
+                  <div class="card-body">
+                    <h5 class="card-title">Top Spenders</h5>
+                    <div class="container card-text mt-3">
+                      <p id="top-spenders2"></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-dark" onclick="confirmReload()">Close and Reset</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal modal-lg fade" id="salesheet1" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="model-name-salesheet"></h5>
+      </div>
+      <div class="modal-body" style="max-height: 500px; overflow-y: auto;">
+        <table class="table" id="salesheet-table">
+          <tr id="exempt-copy">
+            <th scope="col">Date and Time</th>
+            <th scope="col">Amount</th>
+            <th scope="col">Fee</th>
+            <th scope="col">Net</th>
+            <th scope="col">Description</th>
+          </tr>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="copy-salesheet" class="btn btn-dark">Copy</button>
+        <button type="button" id="go-back1" class="btn btn-outline-dark" data-bs-target="#reportModal" data-bs-toggle="modal">Go back</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  const datepicker = document.getElementById('date');
+  
+  function setDateToday() {
+    // Get today's date in the format YYYY-MM-DD
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+    const dd = String(today.getDate()).padStart(2, '0');
+    
+    // Set the value of the date picker
+    datepicker.value = `${yyyy}-${mm}-${dd}`;
+  }
+</script>
+
+<script>
+  const modalElement = document.getElementById('myModal');
+  const reportModal = document.getElementById('reportModal');
+  const myModal = new bootstrap.Modal(modalElement, {});
+  const openReportModal = new bootstrap.Modal(reportModal, {});
+  const mainContent = document.getElementById('main-content');
+
+  myModal.show();
+  mainContent.classList.add('blur-background');
+
+  // Modal element references
+  const dualModelCheckbox = document.getElementById('dualModelCheckbox');
+  const firstModelSelect = document.getElementById('firstModelSelect');
+  const secondModelSelect = document.getElementById('secondModelSelect');
+  const proceedButton = document.getElementById('proceedButton');
+
+  // Dual model toggle
+  dualModelCheckbox.addEventListener('change', function () {
+    if (this.checked) {
+      secondModelSelect.classList.remove('d-none'); // Show second model dropdown
+    } else {
+      secondModelSelect.classList.add('d-none'); // Hide second model dropdown
+      secondModelSelect.selectedIndex = 0; // Reset second model selection
+    }
+  });
+
+  // Proceed button logic
+  proceedButton.addEventListener('click', function () {
+    const firstModel = firstModelSelect.value;
+    const secondModel = secondModelSelect.value;
+
+    if (!dualModelCheckbox.checked && firstModel == "Select model") {
+      Swal.fire({
+        title: "Error",
+        text: "Please select a model.",
+        confirmButtonColor: "#20212C",
+        icon: "error",
+      });
+      return;
+    }
+
+    if (dualModelCheckbox.checked && firstModel == "Select model") {
+      Swal.fire({
+        title: "Error",
+        text: "Please select first model.",
+        confirmButtonColor: "#20212C",
+        icon: "error",
+      });
+      return;
+    }
+
+    if (dualModelCheckbox.checked && secondModel == "Select model") {
+      Swal.fire({
+        title: "Error",
+        text: "Please select second model.",
+        confirmButtonColor: "#20212C",
+        icon: "error",
+      });
+      return;
+    }
+
+    if (dualModelCheckbox.checked && (secondModel == firstModel)) {
+      Swal.fire({
+        title: "Error",
+        text: "Selected models must not be the same.",
+        confirmButtonColor: "#20212C",
+        icon: "error",
+      });
+      return;
+    }
+
+    // Update headers with selected models
+    document.getElementById('modelName1').textContent = firstModel;
+    if (dualModelCheckbox.checked) {
+      document.getElementById('modelName2').textContent = secondModel;
+      document.getElementById('dualModelSection').classList.remove('d-none');
+    } else {
+      document.getElementById('dualModelSection').classList.add('d-none');
+    }
+
+    // Hide the modal
+    myModal.hide();
+    mainContent.classList.remove('blur-background');
+  });
+
+  let originalPaste;
+  let originalCopy;
+  let originalPaste2;
+  let originalCopy2;
+
+  function setupTablePasteHandler(tableId) {
+  const table = document.getElementById(tableId);
+
+  table.addEventListener('paste', function (event) {
+    if(tableId === "spreadsheet1"){
+      originalPaste = event.clipboardData || window.clipboardData;
+      originalCopy = originalPaste.getData('text/html');
+    }
+    if(tableId === "spreadsheet2"){
+      originalPaste2 = event.clipboardData || window.clipboardData;
+      originalCopy2 = originalPaste2.getData('text/html');
+    }
+
+    event.preventDefault();
+
+    // Get clipboard data as plain text
+    let clipboardData = event.clipboardData || window.clipboardData;
+    let pastedData = clipboardData.getData('text/plain'); // Only plain text is needed
+
+    // Split the pasted data into rows
+    let rows = pastedData.split('\n');
+
+    let tbody = table.querySelector('tbody');
+    let currentRowCount = tbody.rows.length;
+    let firstEmptyRowIndex = -1;
+
+    // Find the first empty row index
+    for (let i = 0; i < currentRowCount; i++) {
+      let rowIsEmpty = Array.from(tbody.rows[i].cells).every(cell => cell.innerText.trim() === '');
+      if (rowIsEmpty) {
+        firstEmptyRowIndex = i;
+        break;
+      }
+    }
+
+    // If no empty row is found, start from the end
+    if (firstEmptyRowIndex === -1) {
+      firstEmptyRowIndex = currentRowCount;
+    }
+
+    // Add new rows as needed
+    while (rows.length + firstEmptyRowIndex > tbody.rows.length) {
+      addEmptyRow(tableId);
+    }
+
+    // Loop through each row and split by tabs to fill in cells
+    rows.forEach((rowData, rowIndex) => {
+      let targetRow = tbody.rows[firstEmptyRowIndex + rowIndex];
+      let cells = rowData.split('\t'); // Split each row into columns based on tab
+
+      cells.forEach((cellData, cellIndex) => {
+        if (targetRow.cells[cellIndex]) {
+          targetRow.cells[cellIndex].innerText = cellData.trim(); // Insert plain text into cell
+        }
+      });
+    });
+  });
+}
+
+function getData(tableId) {
+  const table = document.getElementById(tableId);
+  let extractedData = [];
+
+  table.addEventListener('paste', function (event) {
+    event.preventDefault();
+
+    // Get clipboard data as HTML or plain text
+    let clipboardData = event.clipboardData || window.clipboardData;
+    let pastedData = clipboardData.getData('text/html') || clipboardData.getData('text/plain'); // Try to get HTML first, then plain text
+
+    // Create a temporary container to parse the HTML content
+    let tempDiv = document.createElement('div');
+    tempDiv.innerHTML = pastedData;
+
+    // Extract rows from the table in the pasted HTML
+    let rows = tempDiv.querySelectorAll('tr');
+    
+    // Loop through each row and extract data
+    rows.forEach(row => {
+      let cells = row.querySelectorAll('td');
+
+      if (cells.length >= 5) { // Ensure there are enough columns
+        let amount = cells[1].innerText.trim(); // 2nd column (Amount)
+        let net = cells[3].innerText.trim(); // 4th column (Net)
+        
+        let description = cells[4].innerText.trim(); // Description (Sales Type)
+        let name = cells[4].querySelector('a') ? cells[4].querySelector('a').innerText.trim() : ''; // Name from link
+        let userId = cells[4].querySelector('a') ? cells[4].querySelector('a').href.split('/').pop() : ''; // User ID from link
+
+        if(name === ""){
+          name = "deleted user";
+          userId = "N/A";
+        }
+
+        // console.log(name);
+        // console.log(userId);
+
+        // Clean up sales type description (remove "from <name>")
+        let salesType = description.split("from")[0].trim(); // Get only the sales type before "from"
+        
+        // If we have the necessary data, push it to the array
+        if (amount && net && salesType && name && userId) {
+          extractedData.push([parseFloat(amount.replace('$', '')), parseFloat(net.replace('$', '')), salesType, name, userId]);
+        }
+      }
+      
+    });
+
+    // console.log(extractedData); // Log the 2D array for verification
+
+    // Save the extracted data for the correct table
+    if (tableId === 'spreadsheet1') {
+      window.spreadsheet1Data = extractedData;  // Save data for table 1
+    } else if (tableId === 'spreadsheet2') {
+      window.spreadsheet2Data = extractedData;  // Save data for table 2
+    }
+
+    // console.log(window.spreadsheet1Data);
+    // console.log(window.spreadsheet2Data);
+  });
+}
+
+// Apply the handler to both tables
+setupTablePasteHandler('spreadsheet1');
+getData('spreadsheet1');
+setupTablePasteHandler('spreadsheet2');
+getData('spreadsheet2');
+
+function addEmptyRow(tableId) {
+  const table = document.getElementById(tableId);
+  const tbody = table.querySelector('tbody');
+  const newRow = tbody.insertRow();
+  
+  // Add cells to the row (assuming 5 columns)
+  for (let i = 0; i < 5; i++) {
+    let newCell = newRow.insertCell(i);
+    newCell.contentEditable = true; // Make the cell editable
+  }
+}
+
+function confirmReload(){
+  Swal.fire({
+  title: "Confirm Resetting",
+  text: "This will remove all data, are you sure you want to continue?",
+  icon: "warning",
+  showCancelButton: true,
+  confirmButtonColor: "#20212C",
+  cancelButtonColor: "gray",
+  
+  confirmButtonText: "Confirm"
+}).then((result) => {
+  if (result.isConfirmed) {
+    let timerInterval;
+    Swal.fire({
+      title: "Deleting progress...",
+      timer: 2000,
+      timerProgressBar: true,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => {
+        Swal.showLoading();
+        const timer = Swal.getPopup().querySelector("b");
+        timerInterval = setInterval(() => {
+          timer.textContent = `${Swal.getTimerLeft()}`;
+        }, 100);
+      },
+      willClose: () => {
+        clearInterval(timerInterval);
+      }
+    }).then((result) => {
+      if (result.dismiss === Swal.DismissReason.timer) {
+        window.location.reload();
+      }
+    });
+  }
+});
+}
+
+function checkUndefinedArray(){
+  const dualModelCheckbox = document.getElementById('dualModelCheckbox');
+
+  if(dualModelCheckbox.checked == false && typeof(window.spreadsheet1Data) == "undefined"){
+    Swal.fire({
+      title: "Error",
+      text: "Table is empty. Please copy and paste data into the table.",
+      confirmButtonColor: "#20212C",
+      icon: "error",
+    });
+    return;
+  }
+
+  if(dualModelCheckbox.checked == true && (typeof(window.spreadsheet1Data) == "undefined")){
+    Swal.fire({
+      title: "Error",
+      text: "Table 1 is empty. Please copy and paste data into the table.",
+      confirmButtonColor: "#20212C",
+      icon: "error",
+    })
+    return;
+  }
+
+  if(dualModelCheckbox.checked == true && (typeof(window.spreadsheet2Data) == "undefined")){
+    Swal.fire({
+      title: "Error",
+      text: "Table 2 is empty. Please copy and paste data into the table.",
+      confirmButtonColor: "#20212C",
+      icon: "error",
+    })
+    return;
+  }
+
+  // Example usage for specific sale types 
+  let saleTypesToAnalyze = ["Payment for message", "Tip"];
+  let analytics = getAnalytics(window.spreadsheet1Data, saleTypesToAnalyze);
+  let analytics2;
+  let sortedUserTotals = getUserTotalsAndSort(window.spreadsheet1Data, saleTypesToAnalyze);
+  let sortedUserTotals2;
+
+  // console.log("Total Amount:", analytics.totalAmount);
+  // console.log("Total Net Sale:", analytics.totalNetSale);
+  // console.log("Recurring Subscriptions:", analytics.totalRecurringSubscriptions);
+  // console.log("Subscriptions:", analytics.totalSubscriptions);
+  // console.log("Message:", analytics.percentageMessageSale.toFixed(2) + "%");
+  // console.log("Tips:", analytics.percentageTipSale.toFixed(2) + "%");
+  // console.log("Recurring subscriptions (percentage):", analytics.percentageNetSaleRecurringSubscriptions.toFixed(2) + "%");
+  // console.log("Subscriptions (Percentage):", analytics.percentageNetSaleSubscriptions.toFixed(2) + "%");
+  // console.log("------------------------------------------------");
+  // console.log("Top 5 Spenders:");
+  // for (let i = 0; i < Math.min(sortedUserTotals.length, 5); i++) {
+  //   console.log(
+  //     `${i + 1}. $${sortedUserTotals[i].totalNetSale.toFixed(2)}\t${sortedUserTotals[i].username}\t@${sortedUserTotals[i].userId}`
+  //   );
+  // }
+
+
+
+  if(dualModelCheckbox.checked == true){
+    analytics2 = getAnalytics(window.spreadsheet2Data, saleTypesToAnalyze);
+    let sortedUserTotals2 = getUserTotalsAndSort(window.spreadsheet2Data, saleTypesToAnalyze);
+
+    // console.log("------------------------------------------------");
+    // console.log("Total Amount:", analytics2.totalAmount);
+    // console.log("Total Net Sale:", analytics2.totalNetSale);
+    // console.log("Recurring Subscriptions:", analytics2.totalRecurringSubscriptions);
+    // console.log("Subscriptions:", analytics2.totalSubscriptions);
+    // console.log("Message:", analytics2.percentageMessageSale.toFixed(2) + "%");
+    // console.log("Tips:", analytics2.percentageTipSale.toFixed(2) + "%");
+    // console.log("Recurring subscriptions (percentage):", analytics2.percentageNetSaleRecurringSubscriptions.toFixed(2) + "%");
+    // console.log("Subscriptions (Percentage):", analytics2.percentageNetSaleSubscriptions.toFixed(2) + "%");
+    // console.log("Top 5 Spenders:");
+    // for (let i = 0; i < Math.min(sortedUserTotals2.length, 5); i++) {
+    //   console.log(
+    //     `${i + 1}. $${sortedUserTotals2[i].totalNetSale.toFixed(2)}\t${sortedUserTotals[i].username}\t@${sortedUserTotals[i].userId}`
+    //   );
+    // }
+  }
+
+  let model1 = document.getElementById('eosModel1');
+  let gross1 = document.getElementById("gross1");
+  let net1 = document.getElementById("net1");
+  let new1 = document.getElementById("new1");
+  let rec1 = document.getElementById("rec1");
+  let messages1 = document.getElementById("messages1");
+  let tips1 = document.getElementById("tips1");
+  let subs1 = document.getElementById("subs1");
+  let topSpenders1 = document.getElementById("top-spenders1");
+  let topSpendersText1 = "";
+  let topSpenders2 = document.getElementById("top-spenders2");
+  let topSpendersText2 = "";
+
+  model1.innerHTML = firstModelSelect.value;
+  gross1.innerHTML = "$" + analytics.totalAmount;
+  net1.innerHTML =  "$" + analytics.totalNetSale.toFixed(2);
+  new1.innerHTML = analytics.totalSubscriptions;
+  rec1.innerHTML = analytics.totalRecurringSubscriptions;
+  messages1.innerHTML = analytics.percentageMessageSale.toFixed(2) + "%";
+  tips1.innerHTML = analytics.percentageTipSale.toFixed(2) + "%";
+  subs1.innerHTML = analytics.percentageTotalSubscriptions.toFixed(2) + "%";
+
+  for (let i = 0; i < Math.min(sortedUserTotals.length, 5); i++) {
+    topSpendersText1 += `${i + 1}. $${sortedUserTotals[i].totalNetSale.toFixed(2)}\t-\t${sortedUserTotals[i].username}<br>`
+  }
+  
+  topSpenders1.innerHTML = topSpendersText1;
+
+  if(dualModelCheckbox.checked == true){
+    const dualReport = document.getElementById("dualModelReport");
+    let sortedUserTotals2 = getUserTotalsAndSort(window.spreadsheet2Data, saleTypesToAnalyze);
+    let model2 = document.getElementById('eosModel2');
+    let gross2 = document.getElementById("gross2");
+    let net2 = document.getElementById("net2");
+    let new2 = document.getElementById("new2");
+    let rec2 = document.getElementById("rec2");
+    let messages2 = document.getElementById("messages2");
+    let tips2 = document.getElementById("tips2");
+    let subs2 = document.getElementById("subs2");
+
+    dualReport.classList.remove("d-none");
+    model2.innerHTML = secondModelSelect.value;
+    gross2.innerHTML = "$" + analytics2.totalAmount;
+    net2.innerHTML =  "$" + analytics2.totalNetSale.toFixed(2);
+    new2.innerHTML = analytics2.totalSubscriptions;
+    rec2.innerHTML = analytics2.totalRecurringSubscriptions;
+    messages2.innerHTML = analytics2.percentageMessageSale.toFixed(2) + "%";
+    tips2.innerHTML = analytics2.percentageTipSale.toFixed(2) + "%";
+    subs2.innerHTML = analytics2.percentageTotalSubscriptions.toFixed(2) + "%";
+    console.log(sortedUserTotals2);
+    
+
+    for (let i = 0; i < Math.min(sortedUserTotals2.length, 5); i++) {
+      topSpendersText2 += `${i + 1}. $${sortedUserTotals2[i].totalNetSale.toFixed(2)}\t-\t${sortedUserTotals2[i].username}<br>`
+    }
+    
+    topSpenders2.innerHTML = topSpendersText2;
+  }
+
+
+  let timerInterval;
+  Swal.fire({
+    title: "Generating EOS report...",
+    timer: 2000,
+    timerProgressBar: true,
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+    didOpen: () => {
+      Swal.showLoading();
+      const timer = Swal.getPopup().querySelector("b");
+      timerInterval = setInterval(() => {
+        timer.textContent = `${Swal.getTimerLeft()}`;
+      }, 100);
+    },
+    willClose: () => {
+      clearInterval(timerInterval);
+    }
+  }).then((result) => {
+    if (result.dismiss === Swal.DismissReason.timer) {
+      openReportModal.show();
+      mainContent.classList.add('blur-background');
+    }
+  });
+}
+
+document.getElementById("firstCopy").addEventListener('click', function(){
+  let selectShift = document.getElementById("selectShift");
+
+  if(datepicker.value == ""){
+    Swal.fire({
+      title: "Error",
+      text: "Please select date",
+      confirmButtonColor: "#20212C",
+      icon: "error",
+    });
+    return;
+  }
+  if(selectShift.value == "Select shift"){
+    Swal.fire({
+      title: "Error",
+      text: "Please select shift",
+      confirmButtonColor: "#20212C",
+      icon: "error",
+    });
+    return;
+  }
+  formatEOSReport1();
+});
+document.getElementById("secondCopy").addEventListener('click', function(){
+  let selectShift = document.getElementById("selectShift");
+
+  if(datepicker.value == ""){
+    Swal.fire({
+      title: "Error",
+      text: "Please select date",
+      confirmButtonColor: "#20212C",
+      icon: "error",
+    });
+    return;
+  }
+  if(selectShift.value == "Select shift"){
+    Swal.fire({
+      title: "Error",
+      text: "Please select shift",
+      confirmButtonColor: "#20212C",
+      icon: "error",
+    });
+    return;
+  }
+  formatEOSReport2();
+});
+
+function checkShiftInput(){
+
+  let selectShift = document.getElementById("selectShift");
+
+  if(datepicker.value == ""){
+    Swal.fire({
+      title: "Error",
+      text: "Please select date",
+      confirmButtonColor: "#20212C",
+      icon: "error",
+    });
+    return;
+  }
+  if(selectShift.value == "Select shift"){
+    Swal.fire({
+      title: "Error",
+      text: "Please select shift",
+      confirmButtonColor: "#20212C",
+      icon: "error",
+    });
+    return;
+  }
+}
+
+function formatEOSReport1(){
+
+  let saleTypesToAnalyze = ["Payment for message", "Tip"];
+  let analytics = getAnalytics(window.spreadsheet1Data, saleTypesToAnalyze);
+  let sortedUserTotals = getUserTotalsAndSort(window.spreadsheet1Data, saleTypesToAnalyze);
+  let sortedUserTotals2;
+
+  let date = new Date(datepicker.value);
+  const month = date.toLocaleString('default', { month: 'long' }); // 'long' gives the full month name
+  const day = date.getDate(); // Get the day of the month
+
+  let formattedText = 'EOS - ' + month.toString().toUpperCase() + " " + day.toString() + ' - (' + selectShift.value + ')\n\n' +
+  'MODEL: ' + firstModelSelect.value.toUpperCase() + '\n\n' +
+  'TOTAL SALES: $' + analytics.totalAmount + '\n' +
+  'NET SALES: $' + analytics.totalNetSale.toFixed(2) + '\n\n' +
+  'TOP SPENDERS:\n';
+
+for (let i = 0; i < Math.min(sortedUserTotals.length, 5); i++) {
+  formattedText += `${i + 1}. $${sortedUserTotals[i].totalNetSale.toFixed(2)}\t${sortedUserTotals[i].username}\t\t@${sortedUserTotals[i].userId}\n`;
+}
+
+formattedText += '\nSubscriptions  ' + analytics.percentageTotalSubscriptions.toFixed(2) + '%\n' +
+  'Messages  ' + analytics.percentageMessageSale.toFixed(2) + '%\n' +
+  'Tips  ' + analytics.percentageTipSale.toFixed(2) + '%\n' +
+  'Total New Subscribers  ' + analytics.totalSubscriptions + '\n' +
+  'Total Recurring Subscription  ' + analytics.totalRecurringSubscriptions + '';
+
+  copyToClipboard(formattedText);
+}
+
+function formatEOSReport2(){
+
+  let saleTypesToAnalyze = ["Payment for message", "Tip"];
+  let analytics2 = getAnalytics(window.spreadsheet2Data, saleTypesToAnalyze);
+  let sortedUserTotals2 = getUserTotalsAndSort(window.spreadsheet2Data, saleTypesToAnalyze);;
+
+  let date = new Date(datepicker.value);
+  const month = date.toLocaleString('default', { month: 'long' }); // 'long' gives the full month name
+  const day = date.getDate(); // Get the day of the month
+
+  let formattedText = 'EOS - ' + month.toString().toUpperCase() + " " + day.toString() + ' - (' + selectShift.value + ')\n\n' +
+  'MODEL: ' + secondModelSelect.value.toUpperCase() + '\n\n' +
+  'TOTAL SALES: $' + analytics2.totalAmount + '\n' +
+  'NET SALES: $' + analytics2.totalNetSale.toFixed(2) + '\n\n' +
+  'TOP SPENDERS:\n';
+
+  for (let i = 0; i < Math.min(sortedUserTotals2.length, 5); i++) {
+  formattedText += `${i + 1}. $${sortedUserTotals2[i].totalNetSale.toFixed(2)}\t${sortedUserTotals2[i].username}\t\t@${sortedUserTotals2[i].userId}\n`;
+  }
+
+  formattedText += '\nSubscriptions  ' + analytics2.percentageTotalSubscriptions.toFixed(2) + '%\n' +
+  'Messages  ' + analytics2.percentageMessageSale.toFixed(2) + '%\n' +
+  'Tips  ' + analytics2.percentageTipSale.toFixed(2) + '%\n' +
+  'Total New Subscribers  ' + analytics2.totalSubscriptions + '\n' +
+  'Total Recurring Subscription  ' + analytics2.totalRecurringSubscriptions + '';
+
+  copyToClipboard(formattedText);
+}
+
+function copyToClipboard(text){
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  document.body.appendChild(textarea);
+  textarea.select();
+  textarea.setSelectionRange(0, 99999); // For mobile devices
+
+  navigator.clipboard.writeText(textarea.value).then(function() {
+    const Toast = Swal.mixin({
+    toast: true,
+    position: "top",
+    showConfirmButton: false,
+    timer: 2000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+
+    }
+    });
+    Toast.fire({
+      icon: "success",
+      title: "Copied successfully!"
+    });
+    }).catch(function(err) {
+      console.error('Unable to copy text to clipboard', err);
+    }).finally(function() {
+      document.body.removeChild(textarea);
+    });
+}
+
+function getUserTotalsAndSort(data, saleTypes) {
+  // Filter the data to include only the specified sale types
+  let filteredData = data.filter(entry => saleTypes.includes(entry[2]));
+
+  // Calculate total spent for each user
+  let userTotals = {};
+  filteredData.forEach(entry => {
+    const username = entry[3];
+    const userId = entry[4];
+    const netSale = entry[0];
+
+    if (!userTotals[userId]) {
+      userTotals[userId] = { username, userId, totalNetSale: 0 };
+    }
+    userTotals[userId].totalNetSale += netSale;
+  });
+
+  // Convert the totals object into an array
+  let userTotalArray = Object.values(userTotals);
+
+  // Sort the array in descending order of total net sale
+  userTotalArray.sort((a, b) => b.totalNetSale - a.totalNetSale);
+
+  return userTotalArray;
+}
+
+function getAnalytics(data, saleTypes) {
+  // Initialize variables to store the totals
+  let totalAmount = 0;
+  let totalNetSale = 0;
+  let totalMessageSale = 0;
+  let totalTipSale = 0;
+  let totalRecurringSubscriptions = 0;
+  let totalSubscriptions = 0;
+  let totalNetSaleRecurringSubscriptions = 0;
+  let totalNetSaleSubscriptions = 0;
+
+  // Iterate through the data
+  data.forEach(entry => {
+    const amount = entry[0];
+    const netSale = entry[1];
+    const saleType = entry[2];
+
+    // Check if the current saleType is in the list of specified saleTypes
+    if (saleTypes.includes(saleType)) {
+      totalAmount += amount;
+      totalNetSale += netSale;
+    }
+
+    if(saleType === "Payment for message"){
+      totalMessageSale += netSale;
+    }
+    else if(saleType === "Tip"){
+      totalTipSale += netSale;
+    }
+    else if (saleType === "Recurring subscription") {
+      totalRecurringSubscriptions++;
+      totalNetSaleRecurringSubscriptions += netSale;
+    } else if (saleType === "Subscription") {
+      totalSubscriptions++;
+      totalNetSaleSubscriptions += netSale;
+    }
+  });
+
+  // Calculate percentage ratios
+  const totalNetSales = totalNetSale + totalNetSaleRecurringSubscriptions + totalNetSaleSubscriptions;
+  const percentageMessageSale = (totalMessageSale / totalNetSales) * 100;
+  const percentageTipSale = (totalTipSale / totalNetSales) * 100;
+  const percentageNetSaleRecurringSubscriptions = (totalNetSaleRecurringSubscriptions / totalNetSales) * 100;
+  const percentageNetSaleSubscriptions = (totalNetSaleSubscriptions / totalNetSales) * 100;
+  const percentageTotalSubscriptions = percentageNetSaleSubscriptions + percentageNetSaleRecurringSubscriptions;
+
+  // Output the results
+  return {
+    totalAmount,
+    totalNetSale,
+    totalRecurringSubscriptions,
+    totalSubscriptions,
+    percentageMessageSale,
+    percentageTipSale,
+    percentageNetSaleRecurringSubscriptions,
+    percentageNetSaleSubscriptions,
+    percentageTotalSubscriptions
+  };
+}
+</script>
+
+<script>
+  document.getElementById('viewsheet1').addEventListener('click', function () {
+    let saleSheetTitle = firstModelSelect.value + "'s Sale Sheet";
+    document.getElementById("model-name-salesheet").innerHTML = saleSheetTitle;
+
+    const parsedData = parseHTMLTable(originalCopy);
+    populateModal(parsedData);
+  });
+
+// Parse HTML table into an array of objects
+function parseHTMLTable(htmlString) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(htmlString, "text/html");
+  const rows = Array.from(doc.querySelectorAll("table tr"));
+  
+  return rows.map((row) => {
+    const cells = row.querySelectorAll("td");
+    
+    // Ensure we have the expected number of cells in the row
+    if (cells.length < 5) return null;  // Skip incomplete rows
+    
+    return {
+      date: cells[0]?.querySelector(".b-table__date__date")?.textContent.trim(),
+      time: cells[0]?.querySelector(".b-table__date__time")?.textContent.trim(),
+      amount: cells[1]?.textContent.trim(),
+      fee: cells[2]?.textContent.trim(),
+      net: cells[3]?.textContent.trim(),
+      description: cells[4]?.textContent.trim(),
+    };
+  }).filter(row => row !== null);  // Remove any null (invalid) rows
+}
+
+function populateModal(data) {
+  const modalBody = document.querySelector("#salesheet1 .modal-body");
+
+  // Clear any existing content in the modal body
+  // modalBody.innerHTML = "";
+
+  // Filter data
+  const filteredData = data.filter((row) => {
+    if (row.description) {
+      const description = row.description.toLowerCase().trim();
+      return description.includes("payment for message") || description.includes("tip");
+    }
+    return false;
+  });
+
+  // Log filtered data to check if it's correct
+  // console.log("Filtered Data:", filteredData);
+
+  // If no data after filter, log and return early
+  if (filteredData.length === 0) {
+    console.log("No data matched the filter.");
+    return;
+  }
+
+  // Find the salesheet table
+  const salesheetTable = document.getElementById("salesheet-table");
+
+  // Clear any existing rows in the table (other than header)
+  const rows = salesheetTable.querySelectorAll("tr");
+  rows.forEach((row, index) => {
+    // Keep the header row, remove other rows
+    if (index > 0) {
+      row.remove();
+    }
+  });
+
+  // Populate rows based on filtered data
+  filteredData.forEach((row, index) => {
+    const tr = document.createElement("tr");
+
+    // Create table cells for each row
+    const cells = [
+      `${row.date} ${row.time}`,
+      row.amount,
+      row.fee,
+      row.net,
+      row.description
+    ];
+
+    cells.forEach((cellData) => {
+      const td = document.createElement("td");
+      td.textContent = cellData;
+      tr.appendChild(td);
+    });
+
+    // Append the row to the table
+    salesheetTable.appendChild(tr);
+  });
+
+  // Ensure the modal is shown (unhide if necessary)
+  // console.log("Table added to modal body.");
+}
+
+document.getElementById("go-back1").addEventListener("click", function () {
+  const table = document.getElementById("salesheet-table");
+  const rows = table.querySelectorAll("tr:not(#exempt-copy)"); // Select all rows except the header
+  
+  // Remove all rows except the header
+  rows.forEach(row => row.remove());
+});
+
+
+// Copy table content
+document.getElementById("copy-salesheet").addEventListener("click", function () {
+  const table = document.getElementById("salesheet-table");
+  const rows = Array.from(table.querySelectorAll("tr:not(#exempt-copy)")); // Select all rows except the header
+
+  // Create a string to hold the table content (excluding header)
+  let tableContent = "";
+
+  // Loop through each row and extract the text content of td elements
+  rows.forEach(row => {
+    const cells = Array.from(row.querySelectorAll("td"));
+    const rowContent = cells.map(cell => cell.textContent.trim()).join("\t"); // Tab-separated values
+    tableContent += rowContent + "\n"; // Add the row's content and a newline
+  });
+
+  // Copy the content to clipboard
+  navigator.clipboard.writeText(tableContent).then(() => {
+    const Toast = Swal.mixin({
+      toast: true,
+      position: "top",
+      showConfirmButton: false,
+      timer: 2000,
+      timerProgressBar: true,
+      didOpen: (toast) => {}
+    });
+    Toast.fire({
+      icon: "success",
+      title: "Copied successfully!"
+    });
+  }).catch(function(err) {
+    console.error('Unable to copy text to clipboard', err);
+  });
+});
+
+
+
+
+  document.getElementById('viewsheet2').addEventListener('click', function(){
+    let saleSheetTitle = secondModelSelect.value + "'s Sale Sheet";
+    document.getElementById("model-name-salesheet").innerHTML = saleSheetTitle;
+
+    const parsedData = parseHTMLTable(originalCopy2);
+    
+    populateModal(parsedData);
+  });
+</script>
+
+</body>
+</html>
