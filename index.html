@@ -95,6 +95,7 @@
           <option value="Gaby Caivo">Gaby</option>
           <option value="Zoey Riveras">Zoey</option>
           <option value="Carol Marthy">Carol</option>
+          <option value="Sofia Michelle">Sofia</option>
         </select>
         <select id="secondModelSelect" class="form-select mb-3 d-none" aria-label="Default select example">
           <option selected disabled>Select model</option>
@@ -103,6 +104,7 @@
           <option value="Gaby Caivo">Gaby</option>
           <option value="Zoey Riveras">Zoey</option>
           <option value="Carol Marthy">Carol</option>
+          <option value="Sofia Michelle">Sofia</option>
         </select>
         <div class="form-check">
           <input class="form-check-input" type="checkbox" id="dualModelCheckbox">
@@ -313,6 +315,7 @@
         </div>
       </div>
       <div class="modal-footer">
+        <button id="copy-all-btn" type="button" class="btn btn-dark d-none" onclick="copyAllReport()">Copy All</button>
         <button type="button" class="btn btn-outline-dark" onclick="confirmReload()">Close and Reset</button>
       </div>
     </div>
@@ -632,6 +635,7 @@ function confirmReload(){
 
 function checkUndefinedArray(){
   const dualModelCheckbox = document.getElementById('dualModelCheckbox');
+  const copyAllBtn = document.getElementById('copy-all-btn');
 
   if(dualModelCheckbox.checked == false && typeof(window.spreadsheet1Data) == "undefined"){
     Swal.fire({
@@ -661,6 +665,10 @@ function checkUndefinedArray(){
       icon: "error",
     })
     return;
+  }
+
+  if(dualModelCheckbox.checked == true){
+    copyAllBtn.classList.remove('d-none');
   }
 
   // Example usage for specific sale types 
@@ -840,6 +848,29 @@ document.getElementById("secondCopy").addEventListener('click', function(){
   }
   formatEOSReport2();
 });
+document.getElementById("copy-all-btn").addEventListener('click', function(){
+  let selectShift = document.getElementById("selectShift");
+
+  if(datepicker.value == ""){
+    Swal.fire({
+      title: "Error",
+      text: "Please select date",
+      confirmButtonColor: "#20212C",
+      icon: "error",
+    });
+    return;
+  }
+  if(selectShift.value == "Select shift"){
+    Swal.fire({
+      title: "Error",
+      text: "Please select shift",
+      confirmButtonColor: "#20212C",
+      icon: "error",
+    });
+    return;
+  }
+  formatEOSReportAll();
+});
 
 function checkShiftInput(){
 
@@ -877,14 +908,14 @@ function formatEOSReport1(){
   const day = date.getDate(); // Get the day of the month
 
   let formattedText = 'EOS - ' + month.toString().toUpperCase() + " " + day.toString() + ' - (' + selectShift.value + ')\n\n' +
-  'MODEL: ' + firstModelSelect.value.toUpperCase() + '\n\n' +
+  'MODEL: ' + firstModelSelect.value.split(' ')[0] + '\n\n' +
   'TOTAL SALES: $' + analytics.totalAmount + '\n' +
   'NET SALES: $' + analytics.totalNetSale.toFixed(2) + '\n\n' +
   'TOP SPENDERS:\n';
 
-for (let i = 0; i < Math.min(sortedUserTotals.length, 5); i++) {
-  formattedText += `${i + 1}. $${sortedUserTotals[i].totalNetSale.toFixed(2)}\t${sortedUserTotals[i].username}\t\t@${sortedUserTotals[i].userId}\n`;
-}
+  for (let i = 0; i < Math.min(sortedUserTotals.length, 5); i++) {
+    formattedText += `${i + 1}. $${sortedUserTotals[i].totalNetSale.toFixed(2)}\t${sortedUserTotals[i].username}\t\t@${sortedUserTotals[i].userId}\n`;
+  }
 
 formattedText += '\nSubscriptions  ' + analytics.percentageTotalSubscriptions.toFixed(2) + '%\n' +
   'Messages  ' + analytics.percentageMessageSale.toFixed(2) + '%\n' +
@@ -906,16 +937,63 @@ function formatEOSReport2(){
   const day = date.getDate(); // Get the day of the month
 
   let formattedText = 'EOS - ' + month.toString().toUpperCase() + " " + day.toString() + ' - (' + selectShift.value + ')\n\n' +
-  'MODEL: ' + secondModelSelect.value.toUpperCase() + '\n\n' +
+  'MODEL: ' + secondModelSelect.value.split(' ')[0] + '\n\n' +
   'TOTAL SALES: $' + analytics2.totalAmount + '\n' +
   'NET SALES: $' + analytics2.totalNetSale.toFixed(2) + '\n\n' +
   'TOP SPENDERS:\n';
 
   for (let i = 0; i < Math.min(sortedUserTotals2.length, 5); i++) {
-  formattedText += `${i + 1}. $${sortedUserTotals2[i].totalNetSale.toFixed(2)}\t${sortedUserTotals2[i].username}\t\t@${sortedUserTotals2[i].userId}\n`;
+    formattedText += `${i + 1}. $${sortedUserTotals2[i].totalNetSale.toFixed(2)}\t${sortedUserTotals2[i].username}\t\t@${sortedUserTotals2[i].userId}\n`;
   }
 
   formattedText += '\nSubscriptions  ' + analytics2.percentageTotalSubscriptions.toFixed(2) + '%\n' +
+  'Messages  ' + analytics2.percentageMessageSale.toFixed(2) + '%\n' +
+  'Tips  ' + analytics2.percentageTipSale.toFixed(2) + '%\n' +
+  'Total New Subscribers  ' + analytics2.totalSubscriptions + '\n' +
+  'Total Recurring Subscription  ' + analytics2.totalRecurringSubscriptions + '';
+
+  copyToClipboard(formattedText);
+}
+
+function formatEOSReportAll(){
+
+  let saleTypesToAnalyze = ["Payment for message", "Tip"];
+  let analytics1 = getAnalytics(window.spreadsheet1Data, saleTypesToAnalyze);
+  let analytics2 = getAnalytics(window.spreadsheet2Data, saleTypesToAnalyze);
+  let sortedUserTotals1 = getUserTotalsAndSort(window.spreadsheet1Data, saleTypesToAnalyze);
+  let sortedUserTotals2 = getUserTotalsAndSort(window.spreadsheet2Data, saleTypesToAnalyze);
+  let grossSales = analytics1.totalAmount + analytics2.totalAmount;
+  let netSales = analytics1.totalNetSale + analytics2.totalNetSale;
+
+  let date = new Date(datepicker.value);
+  const month = date.toLocaleString('default', { month: 'long' }); // 'long' gives the full month name
+  const day = date.getDate(); // Get the day of the month
+
+  let formattedText = 'EOS - ' + month.toString().toUpperCase() + " " + day.toString() + ' - (' + selectShift.value + ')\n\n' +
+  'MODEL: ' + firstModelSelect.value.split(' ')[0] + ' & ' + secondModelSelect.value.split(' ')[0] + '\n\n' +
+  'TOTAL SALES: $' + grossSales + '\n' +
+  'NET SALES: $' + netSales.toFixed(2) + '\n\n' +
+  'TOP SPENDERS (' + firstModelSelect.value.split(' ')[0] + '):\n';
+
+  for (let i = 0; i < Math.min(sortedUserTotals1.length, 5); i++) {
+    formattedText += `${i + 1}. $${sortedUserTotals1[i].totalNetSale.toFixed(2)}\t${sortedUserTotals1[i].username}\t\t@${sortedUserTotals1[i].userId}\n`;
+  }
+
+  formattedText += '\nTOP SPENDERS ('+ secondModelSelect.value.split(' ')[0] + '):\n';
+
+  for (let i = 0; i < Math.min(sortedUserTotals2.length, 5); i++) {
+    formattedText += `${i + 1}. $${sortedUserTotals2[i].totalNetSale.toFixed(2)}\t${sortedUserTotals2[i].username}\t\t@${sortedUserTotals2[i].userId}\n`;
+  }
+
+  formattedText += 'ANALYTICS (' + firstModelSelect.value.split(' ')[0] + '):' +
+  '\nSubscriptions  ' + analytics1.percentageTotalSubscriptions.toFixed(2) + '%\n' +
+  'Messages  ' + analytics1.percentageMessageSale.toFixed(2) + '%\n' +
+  'Tips  ' + analytics1.percentageTipSale.toFixed(2) + '%\n' +
+  'Total New Subscribers  ' + analytics1.totalSubscriptions + '\n' +
+  'Total Recurring Subscription  ' + analytics1.totalRecurringSubscriptions + '';
+
+  formattedText += '\n\nANALYTICS (' + secondModelSelect.value.split(' ')[0] + '):' +
+  '\nSubscriptions  ' + analytics2.percentageTotalSubscriptions.toFixed(2) + '%\n' +
   'Messages  ' + analytics2.percentageMessageSale.toFixed(2) + '%\n' +
   'Tips  ' + analytics2.percentageTipSale.toFixed(2) + '%\n' +
   'Total New Subscribers  ' + analytics2.totalSubscriptions + '\n' +
