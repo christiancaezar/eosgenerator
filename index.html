@@ -971,8 +971,10 @@ function formatEOSReportAll(){
 
   let formattedText = 'EOS - ' + month.toString().toUpperCase() + " " + day.toString() + ' - (' + selectShift.value + ')\n\n' +
   'MODEL: ' + firstModelSelect.value.split(' ')[0] + ' & ' + secondModelSelect.value.split(' ')[0] + '\n\n' +
-  'TOTAL SALES: $' + grossSales + '\n' +
-  'NET SALES: $' + netSales.toFixed(2) + '\n\n' +
+  'GROSS SALES: $' + grossSales + '\n' +
+  'TOTAL NET SALES: $' + netSales.toFixed(2) + '\n\n' +
+  'NET SALES (' + firstModelSelect.value.split(' ')[0] + '): $' + analytics1.totalNetSale.toFixed(2) + '\n' +
+  'NET SALES (' + secondModelSelect.value.split(' ')[0] + '): $' + analytics2.totalNetSale.toFixed(2) + '\n\n' +
   'TOP SPENDERS (' + firstModelSelect.value.split(' ')[0] + '):\n';
 
   for (let i = 0; i < Math.min(sortedUserTotals1.length, 5); i++) {
@@ -985,7 +987,7 @@ function formatEOSReportAll(){
     formattedText += `${i + 1}. $${sortedUserTotals2[i].totalNetSale.toFixed(2)}\t${sortedUserTotals2[i].username}\t\t@${sortedUserTotals2[i].userId}\n`;
   }
 
-  formattedText += 'ANALYTICS (' + firstModelSelect.value.split(' ')[0] + '):' +
+  formattedText += '\nANALYTICS (' + firstModelSelect.value.split(' ')[0] + '):' +
   '\nSubscriptions  ' + analytics1.percentageTotalSubscriptions.toFixed(2) + '%\n' +
   'Messages  ' + analytics1.percentageMessageSale.toFixed(2) + '%\n' +
   'Tips  ' + analytics1.percentageTipSale.toFixed(2) + '%\n' +
